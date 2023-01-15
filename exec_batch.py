@@ -57,17 +57,17 @@ class HydroProblem(AbsObjetiveFunc):
         return solution.clip(self.inf_lim, self.sup_lim)
 
 substrates_real = [
-    SubstrateReal("Cauchy", {"F": 0.02}),
-    SubstrateReal("Gauss", {"F": 2}),
-    SubstrateReal("Cauchy", {"F": 10}),
-    SubstrateReal("Multipoint"),
+    SubstrateReal("Gauss", {"F": 0.1}),
+    SubstrateReal("DE/best/2", {"F": 0.7, "Cr":0.9}),
     SubstrateReal("BLXalpha", {"Cr": 0.35}),
+    SubstrateReal("Firefly", {"a": 0.7, "b": 1, "d": 0.95, "g": 10}),
+    SubstrateReal("Perm", {"Cr": 4/7}),
 ]
 
 
 params = {
-    "popSize": 100,
-    "rho": 0.8,
+    "popSize": 120,
+    "rho": 0.6,
     "Fb": 0.98,
     "Fd": 0.15,
     "Pd": 0.99,
@@ -99,7 +99,7 @@ def execute_hydro_cro(metric, model):
     c.safe_optimize()
     print(f"\n\n\nFINISHED for {metric} using model {model}")
 
-    output_name = f"config{model}_{metric}"
+    output_name = f"config{model}_{metric}2"
 
     c.display_report(show_plots=False, save_figure=True, figure_name=output_name+".eps")
     c.save_solution(output_name+".csv")
@@ -112,6 +112,8 @@ proc_pool = []
 for i in ["MSE", "NSE", "R2", "KGE"]:
     for j in [0,1,2,3]:
         proc_pool.append(multiprocessing.Process(target=execute_hydro_cro, args=(i, j)))
+
+proc_pool.append(multiprocessing.Process(target=execute_hydro_cro, args=("MSE", 0)))
 
 [p.start() for p in proc_pool]
 

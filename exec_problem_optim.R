@@ -96,6 +96,5 @@ hydro_prob = function(mod, param) {
     
     adjust = suppressWarnings(gof(sim=data$Qmmsim, obs=data$qmmobs, digits=6)[c(3,4,6,9,17,19),1])
     
-    #print(adjust)
-    data.frame(t(data.frame(adjust)))
+    adjust
 }
