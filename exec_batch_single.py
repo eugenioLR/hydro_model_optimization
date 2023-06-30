@@ -14,7 +14,7 @@ from PyCRO_SL.SubstrateReal import SubstrateReal
 import random
 
 class HydroProblem(AbsObjetiveFunc):
-    def __init__(self, rscript_name='exec_problem.R', metric="MSE", model_used=0):         
+    def __init__(self, rscript_name='exec_optim.R', metric="MSE", model_used=0):         
         # Defining the R script and loading the instance in Python
         r = robjects.r
         r['source'](rscript_name)
@@ -27,7 +27,7 @@ class HydroProblem(AbsObjetiveFunc):
         self.model_used = model_used
 
         opt = "min"
-        if metric in ["KGE", "NSE"]:
+        if metric in ["KGE", "NSE", "R2"]:
             opt = "max"
         else:
             opt = "min"
@@ -45,7 +45,7 @@ class HydroProblem(AbsObjetiveFunc):
         elif self.metric == "NSE":
             return float(metrics[3])
         elif self.metric == "R2":
-            return abs(1 - float(metrics[4]))
+            return float(metrics[4])
         elif self.metric == "KGE":
             return float(metrics[5])
         
@@ -81,7 +81,7 @@ params = {
     "Neval": 3e4,
     "fit_target": 1000,
 
-    "verbose": False,
+    "verbose": True,
     "v_timer": 1,
 
     "dynamic": True,
@@ -93,13 +93,13 @@ params = {
 
 def execute_hydro_cro(metric, model):
     print(f"START for {metric} using model {model}\n\n")
-    objfunc = HydroProblem("exec_problem_optim.R", metric, model)
+    objfunc = HydroProblem("exec_optim.R", metric, model)
     c = CRO_SL(objfunc, substrates_real, params)
 
     c.safe_optimize()
     print(f"\n\n\nFINISHED for {metric} using model {model}")
 
-    output_name = f"config{model}_{metric}2"
+    output_name = f"config_simple_5043_{model}_{metric}"
 
     c.display_report(show_plots=False, save_figure=True, figure_name=output_name+".eps")
     c.save_solution(output_name+".csv")

@@ -2,15 +2,20 @@ require(readr)
 require(hydroGOF)
 
 #datos
-data <- read_csv("data3045.txt", show_col_types = FALSE)
-data$date = as.Date(paste0(data$date,"01"),format = "%Y%m%d")
-data = data[order(data$date),]
+data <- read_csv("data/CHGdataSIMPA5043AG.txt", show_col_types = FALSE)
+data$date = as.Date(paste0(data$date,"01"), format = "%Y%m%d")
+data <- data[data[,1] == 5043,]
+data <- data[order(data$date),]
+
+basin_info <- read_csv("data/CHGbasins5043AG.txt", show_col_types = FALSE)
+supha <- basin_info[,"supha"]
 
 hydro_prob = function(mod, param) {
     #2. Ejecución del modelo#####################################################
 
     #y resto
-    data[,"Qmmsim"]<-NA
+    # data[,"Qhmsim"] <- NA
+    
     
     Swi <- 0
     Sgi <- 0
@@ -22,16 +27,14 @@ hydro_prob = function(mod, param) {
     roi <- 0
     Sgi <- 0
     Swi <- 0
-    
-    #print("a")
+    Qmmsim <- 0
+    Qhmsim <- rep(0, nrow(data))
 
     pre = data[,"pre"]
     tas = data[,"tas"]
     etp = data[,"etp"]
 
     for(i in 1:nrow(data)){
-        #print(pre[i])
-
         #A) RUTINA WASMOD (modos 2 o 3)
         if(mod >= 2){
 
@@ -83,18 +86,15 @@ hydro_prob = function(mod, param) {
         }
         
         #suma descarga y esc
-        data[i,"Qmmsim"] <- roi + Qbi
-
-        # # assign variables
+        # data[i,"Qhmsim"] <- roi + Qbi
+        Qmmsim <- roi + Qbi
+        Qhmsim[i] <- Qmmsim*supha/100000
     }
-    
-    # assign variables
 
     #3. Estadisticos de bondad de ajuste en calibración############
-
-    #f0 que vamos a establecer como el negativo de NSE (para minimizar)
     
-    adjust = suppressWarnings(gof(sim=data$Qmmsim, obs=data$qmmobs, digits=6)[c(3,4,6,9,17,19),1])
+    # adjust = suppressWarnings(gof(sim=data$Qmmsim, obs=data$qmmobs, digits=6)[c(3,4,6,9,17,19),1])
+    adjust = suppressWarnings(gof(sim=as.numeric(Qhmsim), obs=data$qhmobs, digits=6)[c(3,4,6,9,17,19),1])
     
     adjust
 }
