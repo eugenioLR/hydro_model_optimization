@@ -1,4 +1,6 @@
 *.csv
+*.txt
+!README.txt
 __pycache__/
 figures/
 .ipynb_checkpoints

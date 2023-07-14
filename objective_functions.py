@@ -112,7 +112,7 @@ class HydroSemidistModelGOF(AbsObjectiveFunc):
 
 class HydroFullModelGOF(AbsObjectiveFunc):
     def __init__(self, rscript_name='exec_semidist.R', data_file="data/CHGdataSIMPA.txt", basin_file="data/CHGbasins.txt",
-                 metric="MSE", model_used=0, weights=None, basin_code=3005):
+                 metric="MSE", model_used=0, weights=None):#, basin_code=3005):
 
         # Defining the R script and loading the instance in Python
         r = robjects.r
@@ -130,7 +130,7 @@ class HydroFullModelGOF(AbsObjectiveFunc):
         self.metric = metric
         self.model_used = model_used
         self.basin_df = basin_df
-        self.basin_code = basin_code
+        # self.basin_code = basin_code
 
         if weights is None:
             weights = np.full(len(basin_df), 1/len(basin_df))
@@ -148,7 +148,7 @@ class HydroFullModelGOF(AbsObjectiveFunc):
         size = 7*len(basin_df)
 
         super().__init__(size, opt, sup_lim, inf_lim)
-        self.name = f"Hydro Full GOF (metric={metric}, basin={basin_code}, model_type={model_used})"
+        self.name = f"Hydro Full GOF (metric={metric}, basin={basin_df['code'].iloc[-1]}, model_type={model_used})"
 
     def objective(self, solution):
         agg_q = {}
@@ -218,7 +218,6 @@ if __name__ == "__main__":
 
         my_art = AsciiArt.from_url("http://i0.kym-cdn.com/photos/images/facebook/001/244/891/d1f.png")
         my_art.to_terminal(columns=70, monochrome=False)
-        raise Exception()
     except Exception as e:
         
         print(f"NOOOOOOOO. \n{e}\n")
