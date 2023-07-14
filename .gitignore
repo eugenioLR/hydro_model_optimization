@@ -1,6 +1,10 @@
 *.csv
-figures/*
+__pycache__/
+figures/
+.ipynb_checkpoints
 .RData
 .Rhistory
 results
 data
+PyCRO_SL
+PyCRO_SL_old
