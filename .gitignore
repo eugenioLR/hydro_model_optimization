@@ -1,0 +1,6 @@
+*.csv
+figures/*
+.RData
+.Rhistory
+results
+data
