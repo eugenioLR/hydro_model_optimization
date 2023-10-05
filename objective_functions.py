@@ -12,7 +12,7 @@ from PyCROSL import AbsObjectiveFunc
 
 class HydroSimpleModelGOF(AbsObjectiveFunc):
     def __init__(self, rscript_name='exec_optim.R', data_file="data/CHGdataSIMPA5043AG.txt", basin_file="data/CHGbasins5043AG.txt",
-                 metric="MSE", model_used=0):         
+                 metric="MSE", model_used=0, basin_code=None):         
         # Defining the R script and loading the instance in Python
         r = robjects.r
         r['source'](rscript_name)
@@ -36,7 +36,7 @@ class HydroSimpleModelGOF(AbsObjectiveFunc):
         self.exec_function_r = robjects.globalenv['hydro_prob']
 
         super().__init__(self.input_size, opt, sup_lim, inf_lim)
-        self.name = f"Hydro Simple GOF (metric={metric}, model_type={model_used})"
+        self.name = f"Hydro Simple GOF (metric={metric}, model_type={model_used}{', basin_code=' + str(basin_code) if basin_code else ''})"
 
     def objective(self, solution):
         metrics = self.exec_function_r(self.model_used, solution)
@@ -134,10 +134,11 @@ class HydroFullModelGOF(AbsObjectiveFunc):
 
         if weights is None:
             weights = np.full(len(basin_df), 1/len(basin_df))
-        self.weights = weights        
+        self.weights = np.asarray(weights)
 
         inf_lim = np.tile(np.array([1e-4,10,0,1e-4,1e-4,2,-6]), len(basin_df))
         sup_lim = np.tile(np.array([1,2000,1,100,1,11,1]), len(basin_df))
+        self.param_len = 7
 
         opt = "min"
         if metric in ["KGE", "NSE", "R2"]:
@@ -154,7 +155,7 @@ class HydroFullModelGOF(AbsObjectiveFunc):
         agg_q = {}
         result_q = {}
         
-        result = 0
+        results = []
 
         for i, idx in enumerate(self.basin_df.index):
             basin_code = self.basin_df["code"][idx]
@@ -163,8 +164,9 @@ class HydroFullModelGOF(AbsObjectiveFunc):
             prev_q = 0
             if basin_code in agg_q:
                 prev_q = agg_q[basin_code]
+            solution_basin = solution[i*self.param_len:(i+1)*self.param_len]
             
-            result_q[basin_code] = self.get_basin_q(self.model_used, solution, basin_code, prev_q)
+            result_q[basin_code] = self.get_basin_q(self.model_used, solution_basin, basin_code, prev_q)
             if codedown not in agg_q:
                 agg_q[codedown] = 0
             agg_q[codedown] += result_q[basin_code]
@@ -181,8 +183,10 @@ class HydroFullModelGOF(AbsObjectiveFunc):
             elif self.metric == "KGE":
                 result_aux = float(metrics[5])
 
-            result += result_aux * self.weights[i]
-        return result
+            # result += result_aux * self.weights[i]
+            results.append(result_aux)
+        results = np.asarray(results)
+        return np.average(results, weights=self.weights)
         
 
     def random_solution(self):

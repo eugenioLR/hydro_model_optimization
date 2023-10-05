@@ -14,8 +14,10 @@ import multiprocessing
 from itertools import product
 
 rscript_name = "exec_optim_semidist.R"
-data_file = "data/CHGdataSIMPA.txt"
-basin_file = "data/CHGbasins.txt"
+#data_file = "data/CHGdataSIMPA.txt"
+#basin_file = "data/CHGbasins.txt"
+data_file = "data/CHTdataSIMPAcal.txt"
+basin_file = "data/basinsSimpa.txt"
 
 r = robjects.r
 r['source'](rscript_name)
@@ -111,11 +113,8 @@ def execute_hydro_cro(metric, model):
 def execute_hydro_cro_wrapper(x):
     execute_hydro_cro(*x)
 
-def main():
+def main(args):
     pool = multiprocessing.Pool(processes=16)
-
-    # args = product(["MSE", "NSE", "R2", "KGE"], [0,1,2,3])
-    args = product(["MSE", "NSE", "KGE"], [0,1,2,3])
 
     pool_results = pool.map_async(execute_hydro_cro_wrapper, args)
 
@@ -125,4 +124,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # args = product(["MSE", "NSE", "R2", "KGE"], [0,1,2,3])
+    # args = product(["MSE", "NSE", "KGE"], [0,1,2,3])
+    args = [('KGE', 0)]
+    main(args)
