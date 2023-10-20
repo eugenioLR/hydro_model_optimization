@@ -1,15 +1,15 @@
 require(readr)
 require(hydroGOF)
 
-#datos
-data <- read_csv("data/CHGdataSIMPA.txt", show_col_types = FALSE)
-# data <- read_csv("data/dataSimpa.txt", show_col_types = FALSE)
-data$date = as.Date(paste0(data$date,"01"), format = "%Y%m%d")
-# data <- data[data[,1] == 5029 | data[,1] == 5054 | data[,1] == 5060 | data[,1] == 5071 | data[,1] == 5043,]
-data = data[order(data$date),]
+# #datos
+# data <- read_csv("data/CHGdataSIMPA.txt", show_col_types = FALSE)
+# # data <- read_csv("data/dataSimpa.txt", show_col_types = FALSE)
+# data$date = as.Date(paste0(data$date,"01"), format = "%Y%m%d")
+# # data <- data[data[,1] == 5029 | data[,1] == 5054 | data[,1] == 5060 | data[,1] == 5071 | data[,1] == 5043,]
+# data = data[order(data$date),]
 
-basins = as.data.frame(read_csv("data/CHGbasins.txt"))
-# basins = as.data.frame(read_csv("data/basinsSimpa.txt"))
+# basins = as.data.frame(read_csv("data/CHGbasins.txt"))
+# # basins = as.data.frame(read_csv("data/basinsSimpa.txt"))
 
 
 # code,order,codedown,supha
@@ -18,6 +18,16 @@ basins = as.data.frame(read_csv("data/CHGbasins.txt"))
 # 5060,1,5043,15684.26
 # 5071,1,5043,12170.17
 # 5043,2,0,277148.04
+
+data <- NA
+
+init_global = function(data_file, basin_file){
+    #datos
+    data <- read_csv(data_file, show_col_types = FALSE)
+    data$date <- as.Date(paste0(data$date,"01"), format = "%Y%m%d")
+    data <<- data[order(data$date),]
+    basins <<- as.data.frame(read_csv(basin_file))
+}
 
 get_basin_q = function(mod, param, basin_code, prev_q) {
     #2. Ejecución del modelo#####################################################

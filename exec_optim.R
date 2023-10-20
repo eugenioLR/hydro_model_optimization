@@ -2,13 +2,26 @@ require(readr)
 require(hydroGOF)
 
 #datos
-data <- read_csv("data/CHGdataSIMPA5043AG.txt", show_col_types = FALSE)
-data$date = as.Date(paste0(data$date,"01"), format = "%Y%m%d")
-data <- data[data[,1] == 5043,]
-data <- data[order(data$date),]
+# data <- read_csv("data/CHGdataSIMPA5043AG.txt", show_col_types = FALSE)
+# data$date = as.Date(paste0(data$date,"01"), format = "%Y%m%d")
+# data <- data[data[,1] == 5043,]
+# data <- data[order(data$date),]
 
-basin_info <- read_csv("data/CHGbasins5043AG.txt", show_col_types = FALSE)
-supha <- basin_info[,"supha"]
+# basin_info <- read_csv("data/CHGbasins5043AG.txt", show_col_types = FALSE)
+# supha <- basin_info[,"supha"]
+
+data <- NA
+
+init_global = function(data_file, basin_file){
+    #datos
+    data <- read_csv(data_file, show_col_types = FALSE)
+    data$date <- as.Date(paste0(data$date,"01"), format = "%Y%m%d")
+    data <- data[data[,1] == 5043,]
+    data <<- data[order(data$date),]
+
+    basin_info <<- read_csv(basin_file, show_col_types = FALSE)
+    supha <<- basin_info[,"supha"]
+}
 
 hydro_prob = function(mod, param) {
     #2. Ejecución del modelo#####################################################
