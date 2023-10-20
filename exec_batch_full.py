@@ -26,10 +26,12 @@ basin_df.sort_values(by=["order"])
 full_data = pd.read_csv(data_file)
 for i, idx in enumerate(basin_df.index):
     basin_code = basin_df["code"][idx]
-    total_caudal = full_data[full_data["qhmobs"] != -100][full_data["code"] == basin_code]["qhmobs"].sum()
+    total_caudal = full_data[full_data["qhmobs"] != -100][
+        full_data["code"] == basin_code
+    ]["qhmobs"].sum()
     weights.append(total_caudal)
 
-weights = np.asarray(weights)/sum(weights)
+weights = np.asarray(weights) / sum(weights)
 print(weights)
 
 # substrates_real = [
@@ -43,9 +45,17 @@ print(weights)
 
 substrates_real = [
     # SubstrateReal("Gauss", {"F": np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001])}),
-    SubstrateReal("Cauchy", {"F": np.tile(np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001]), len(basin_df)).flatten()}),
+    SubstrateReal(
+        "Cauchy",
+        {
+            "F": np.tile(
+                np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001]),
+                len(basin_df),
+            ).flatten()
+        },
+    ),
     SubstrateReal("MutNoise", {"method": "Gauss", "F": 1e-4, "N": 1}),
-    SubstrateReal("DE/best/2", {"F": 0.7, "Cr":0.7}),
+    SubstrateReal("DE/best/2", {"F": 0.7, "Cr": 0.7}),
     SubstrateReal("BLXalpha", {"F": 0.35}),
     SubstrateReal("Firefly", {"a": 0.7, "b": 1, "d": 0.95, "g": 10}),
     # SubstrateReal("Perm", {"N": 2}),
@@ -60,28 +70,27 @@ params = {
     "k": 3,
     "K": 10,
     "group_subs": True,
-
     "stop_cond": "Neval",
     "time_limit": 400.0,
     "Ngen": 100,
     "Neval": 3e4,
     "fit_target": 1000,
-
     "verbose": True,
     "v_timer": 1,
-
     "dynamic": True,
     "dyn_method": "fitness",
     "dyn_metric": "best",
     "dyn_steps": 200,
-    "prob_amp": 0.015
+    "prob_amp": 0.015,
 }
-    
+
 
 def execute_hydro_cro(metric, model):
     print(f"START for {metric} using model {model}\n\n")
 
-    objfunc = HydroFullModelGOF("exec_optim_semidist.R", data_file, basin_file, metric, model, weights=weights)
+    objfunc = HydroFullModelGOF(
+        "exec_optim_semidist.R", data_file, basin_file, metric, model, weights=weights
+    )
     # objfunc = HydroFullModelGOF("exec_optim_semidist.R", data_file, basin_file, metric, model)
     c = CRO_SL(objfunc, substrates_real, params)
 
@@ -90,12 +99,15 @@ def execute_hydro_cro(metric, model):
 
     output_name = f"config_fullpon_5045_{model}_{metric}"
 
-    c.display_report(show_plots=False, save_figure=True, figure_name=output_name+".eps")
-    c.save_solution(output_name+".csv")
+    c.display_report(
+        show_plots=False, save_figure=True, figure_name=output_name + ".eps"
+    )
+    c.save_solution(output_name + ".csv")
 
 
 def execute_hydro_cro_wrapper(x):
     execute_hydro_cro(*x)
+
 
 def main(args):
     pool = multiprocessing.Pool(processes=17)
@@ -110,10 +122,10 @@ def main(args):
 if __name__ == "__main__":
     # args = product(["MSE", "NSE", "R2", "KGE"], [0,1,2,3])
     # args = product(["MSE", "NSE", "KGE"], [0,1,2,3])
-    
-    args = [('MSE', 0)]             # FullPon CHG
+
+    args = [("MSE", 0)]  # FullPon CHG
     # args = [('KGE', 1), ('NSE', 0)] # Full    CHG
     # args = [('KGE', 1)]               # FullPon CHT
     # args = [('KGE', 1)]               # Full    CHT
-    
+
     main(args)
