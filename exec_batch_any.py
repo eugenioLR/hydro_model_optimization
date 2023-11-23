@@ -10,22 +10,34 @@ pandas2ri.activate()
 from PyCROSL import SubstrateReal, AbsObjectiveFunc, CRO_SL
 import random
 from objective_functions import *
+import argparse
+
+parser = argparse.ArgumentParser(prog="River basin optimization", description="Optimizes river basins.")
+
+parser.add_argument("-b", "--basin_n")
+args = parser.parse_args()
+
+if args.basin_n is None:
+    raise Exception("Please indicate the basin with the -b flag")
+
+# basin_n = 5043  # 3005 or 5043
+basin_n = int(args.basin_n)
 
 rscript_name_single = "exec_optim.R"
 rscript_name_cascade = "exec_optim_semidist.R"
 
-basin_n = 3005  # 3005 or 5043
-
 if basin_n == 3005:
-    # data_file_single = "data/data_CHT_3005.txt"
+    data_file_single = "data/data_CHT_3005.txt"
     data_file_cascade = "data/data_CHT_SIMPA.txt"
-    data_file_single = data_file_cascade
-    basin_file = "data/basins_CHT.txt"
+    basin_file_single = "data/basins_CHT_3005.txt"
+    basin_file_cascade = "data/basins_CHT.txt"
+elif basin_n == 5043:
+    data_file_single = "data/data_CHG_5043.txt"
+    data_file_cascade = "data/data_CHG_SIMPA.txt"
+    basin_file_single = "data/basins_CHG_5043.txt"
+    basin_file_cascade = "data/basins_CHG.txt"
 else:
-    # data_file_single = "data/data_CHG_5043.txt"
-    data_file_cascade = "data/data_CHT_SIMPA.txt"
-    data_file_single = data_file_cascade
-    basin_file = "data/basins_CHG.txt"
+    raise Exception("Invalid basin. Try 5043 or 3005")
 
 r = robjects.r
 r["source"](rscript_name_single)
@@ -43,9 +55,10 @@ for i, idx in enumerate(basin_df.index):
         full_data["code"] == basin_code
     ]["qhmobs"].sum()
     weights.append(total_caudal)
-
+print(weights)
 weights = np.asarray(weights) / sum(weights)
 print(weights)
+
 
 
 def execute_hydro_cro_single(metric, model):
@@ -58,7 +71,14 @@ def execute_hydro_cro_single(metric, model):
             "Cauchy",
             {"F": np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001])},
         ),
-        SubstrateReal("MutNoise", {"method": "Gauss", "F": 1e-4, "N": 1}),
+        SubstrateReal(
+            "MutNoise",
+            {
+                "method": "Gauss",
+                "F": np.array([0.001, 1, 0.001, 0.1, 0.001, 0.01, 0.001]),
+                "N": 1,
+            },
+        ),
         SubstrateReal("DE/best/2", {"F": 0.7, "Cr": 0.7}),
         SubstrateReal("BLXalpha", {"F": 0.35}),
         SubstrateReal("Firefly", {"a": 0.7, "b": 1, "d": 0.95, "g": 10}),
@@ -93,9 +113,7 @@ def execute_hydro_cro_single(metric, model):
 
     output_name = f"config_single_{basin_n}_{model}_{metric}"
 
-    c.display_report(
-        show_plots=False, save_figure=True, figure_name=output_name + ".eps"
-    )
+    c.display_report(show_plots=False, save_figure=True, figure_name=output_name + ".eps")
     c.save_solution(output_name + ".csv")
 
 
@@ -103,8 +121,20 @@ def execute_hydro_cro_cascade(metric, model):
     print(f"START for {metric} using model {model}\n\n")
 
     substrates_real = [
-        SubstrateReal("Gauss", {"F": 0.0001}),
-        SubstrateReal("Cauchy", {"F": 0.01}),
+        # SubstrateReal("Gauss", {"F": 0.0001}),
+        # SubstrateReal("Cauchy", {"F": 0.01}),
+        SubstrateReal(
+            "Cauchy",
+            {"F": np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001])},
+        ),
+        SubstrateReal(
+            "MutNoise",
+            {
+                "method": "Gauss",
+                "F": np.array([0.001, 1, 0.001, 0.1, 0.001, 0.01, 0.001]),
+                "N": 1,
+            },
+        ),
         SubstrateReal("DE/best/2", {"F": 0.7, "Cr": 0.7}),
         SubstrateReal("BLXalpha", {"F": 0.35}),
         SubstrateReal("Firefly", {"a": 0.7, "b": 1, "d": 0.95, "g": 10}),
@@ -148,7 +178,7 @@ def execute_hydro_cro_cascade(metric, model):
         objfunc = HydroSemidistModelGOF(
             rscript_name_cascade,
             data_file_cascade,
-            basin_file,
+            basin_file_cascade,
             metric,
             model,
             basin_code,
@@ -162,18 +192,14 @@ def execute_hydro_cro_cascade(metric, model):
 
         output_name = f"config_cascade_nd_{model}_{metric}_{basin_code}"
 
-        c.display_report(
-            show_plots=False, save_figure=True, figure_name=output_name + ".eps"
-        )
+        c.display_report(show_plots=False, save_figure=True, figure_name=output_name + ".eps")
 
         basin_params[basin_code] = c.best_solution()[0]
 
         if codedown not in agg_q:
             agg_q[codedown] = 0
 
-        agg_q[codedown] += get_basin_q(
-            model, basin_params[basin_code], basin_code, prev_q
-        )
+        agg_q[codedown] += get_basin_q(model, basin_params[basin_code], basin_code, prev_q)
 
     result = []
     for i in basin_df["code"]:
@@ -195,11 +221,14 @@ def execute_hydro_cro_full(metric, model):
         # SubstrateReal("Gauss", {"F": np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001])}),
         SubstrateReal(
             "Cauchy",
+            {"F": np.tile(np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001]), len(basin_df)).flatten()},
+        ),
+        SubstrateReal(
+            "MutNoise",
             {
-                "F": np.tile(
-                    np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001]),
-                    len(basin_df),
-                ).flatten()
+                "method": "Gauss",
+                "F": np.tile(np.array([0.001, 1, 0.001, 0.1, 0.001, 0.01, 0.001]), len(basin_df)).flatten(),
+                "N": 1,
             },
         ),
         SubstrateReal("MutNoise", {"method": "Gauss", "F": 1e-4, "N": 1}),
@@ -237,9 +266,7 @@ def execute_hydro_cro_full(metric, model):
 
     output_name = f"config_full_{basin_n}_{model}_{metric}"
 
-    c.display_report(
-        show_plots=False, save_figure=True, figure_name=output_name + ".eps"
-    )
+    c.display_report(show_plots=False, save_figure=True, figure_name=output_name + ".eps")
     c.save_solution(output_name + ".csv")
 
 
@@ -249,7 +276,7 @@ def execute_hydro_cro_fullpon(metric, model):
     objfunc = HydroFullModelGOF(
         rscript_name_cascade,
         data_file_cascade,
-        basin_file,
+        basin_file_cascade,
         metric,
         model,
         weights=weights,
@@ -259,13 +286,17 @@ def execute_hydro_cro_fullpon(metric, model):
         SubstrateReal(
             "Cauchy",
             {
-                "F": np.tile(
-                    np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001]),
-                    len(basin_df),
-                ).flatten()
+                "F": np.tile(np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001]),len(basin_df),).flatten(),
             },
         ),
-        SubstrateReal("MutNoise", {"method": "Gauss", "F": 1e-4, "N": 1}),
+        SubstrateReal(
+            "MutNoise",
+            {
+                "method": "Gauss",
+                "F": np.tile(np.array([0.001, 1, 0.001, 0.1, 0.001, 0.01, 0.001]),len(basin_df),).flatten(),
+                "N": 1,
+            },
+        ),
         SubstrateReal("DE/best/2", {"F": 0.7, "Cr": 0.7}),
         SubstrateReal("BLXalpha", {"F": 0.35}),
         SubstrateReal("Firefly", {"a": 0.7, "b": 1, "d": 0.95, "g": 10}),
@@ -300,9 +331,7 @@ def execute_hydro_cro_fullpon(metric, model):
 
     output_name = f"config_fullpon_{basin_n}_{model}_{metric}"
 
-    c.display_report(
-        show_plots=False, save_figure=True, figure_name=output_name + ".eps"
-    )
+    c.display_report(show_plots=False, save_figure=True, figure_name=output_name + ".eps")
     c.save_solution(output_name + ".csv")
 
 
@@ -321,6 +350,7 @@ def execute_hydro_cro_wrapper(x):
         )
 
 
+
 def main(args):
     pool = multiprocessing.Pool(processes=16)
 
@@ -332,21 +362,61 @@ def main(args):
 
 
 if __name__ == "__main__":
-    args = [
-        # ('single', 'NSE', 0),
-        # ('single', 'NSE', 1),
-        # ('single', 'KGE', 0),
-        # ('single', 'KGE', 1),
+    args_5043 = [
+        # ("single", "NSE", 0),
+        # ('cascade', 'NSE', 0),
+        # ("full", "NSE", 0),
+        # ("fullpon", "NSE", 0),
+        # ("single", "NSE", 1),
+        # ('cascade', 'NSE', 1),
+        ("full", "NSE", 1),
+        ("fullpon", "NSE", 1),
+        # ('single', 'MSE', 0),
+        # ('cascade', 'MSE', 0),
+        # ('full', 'MSE', 0),
+        # ("fullpon", "MSE", 0),
+        # ("single", "MSE", 1),
+        # ('cascade', 'MSE', 1),
+        # ("full", "MSE", 1),
+        # ("fullpon", "MSE", 1),
+        # ("single", "KGE", 0),
+        # ('cascade', 'KGE', 0),
+        # ('full', 'KGE', 0),
+        # ('fullpon', 'KGE', 0),
+        # ("single", "KGE", 1),
         # ('cascade', 'KGE', 1),
-        # ('full', 'NSE', 0),
-        # ('full', 'NSE', 1),
-        # ('full', 'MSE', 1),
-        # ('full', 'KGE', 1),
-        # ('fullpon', 'NSE', 0),
-        # ('fullpon', 'NSE', 1),
-        # ('fullpon', 'MSE', 0),
-        # ('fullpon', 'MSE', 1),
-        # ('fullpon', 'KGE', 1),
+        ("full", "KGE", 1),
+        # ("fullpon", "KGE", 1),
     ]
 
-    main(args)
+    args_3005 = [
+        # ("single", "NSE", 0),
+        # ('cascade', 'NSE', 0),
+        # ("full", "NSE", 0),
+        # ("fullpon", "NSE", 0),
+        # ("single", "NSE", 1),
+        # ('cascade', 'NSE', 1),
+        ("full", "NSE", 1),
+        # ("fullpon", "NSE", 1),
+        # ('single', 'MSE', 0),
+        # ('cascade', 'MSE', 0),
+        # ('full', 'MSE', 0),
+        # ("fullpon", "MSE", 0),
+        #("single", "MSE", 1),
+        # ('cascade', 'MSE', 1),
+        # ("full", "MSE", 1),
+        # ("fullpon", "MSE", 1),
+        # ("single", "KGE", 0),
+        # ('cascade', 'KGE', 0),
+        # ('full', 'KGE', 0),
+        # ('fullpon', 'KGE', 0),
+        # ("single", "KGE", 1),
+        # ('cascade', 'KGE', 1),
+        # ("full", "KGE", 1),
+        # ("fullpon", "KGE", 1),
+    ]
+
+    if basin_n == 5043:
+        main(args_5043)
+    else:
+        main(args_3005)
