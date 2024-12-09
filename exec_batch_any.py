@@ -61,7 +61,6 @@ weights = np.asarray(weights) / sum(weights)
 print(weights)
 
 
-
 def execute_hydro_cro_single(metric, model):
     print(f"START for {metric} using model {model}\n\n")
     objfunc = HydroSimpleModelGOF(
@@ -349,6 +348,7 @@ def execute_hydro_cro_wrapper(x):
         raise Exception(
             f"Try using 'single', 'cascade', 'full' or 'fullpon' instead of {x[0]}."
         )
+
 
 
 
