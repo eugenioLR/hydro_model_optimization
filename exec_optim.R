@@ -99,14 +99,12 @@ hydro_prob = function(mod, param) {
         }
         
         #suma descarga y esc
-        # data[i,"Qhmsim"] <- roi + Qbi
         Qmmsim <- roi + Qbi
         Qhmsim[i] <- Qmmsim*supha/100000
     }
 
     #3. Estadisticos de bondad de ajuste en calibración############
     
-    # adjust = suppressWarnings(gof(sim=data$Qmmsim, obs=data$qmmobs, digits=6)[c(3,4,6,9,17,19),1])
     adjust = suppressWarnings(gof(sim=as.numeric(Qhmsim), obs=data$qhmobs, digits=6)[c(3,4,6,9,17,19),1])
     
     adjust

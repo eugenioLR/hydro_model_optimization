@@ -27,7 +27,8 @@ rscript_name_single = "exec_optim.R"
 rscript_name_cascade = "exec_optim_semidist.R"
 
 if basin_n == 3005:
-    data_file_single = "data/data_CHT_3005.txt"
+    # data_file_single = "data/data_CHT_3005.txt"
+    data_file_single = "data/data_CHT_SIMPA.txt"
     data_file_cascade = "data/data_CHT_SIMPA.txt"
     basin_file_single = "data/basins_CHT_3005.txt"
     basin_file_cascade = "data/basins_CHT.txt"
@@ -364,13 +365,13 @@ def main(args):
 if __name__ == "__main__":
     args_5043 = [
         # ("single", "NSE", 0),
-        # ('cascade', 'NSE', 0),
-        # ("full", "NSE", 0),
+        ('cascade', 'NSE', 0),
+        ("full", "NSE", 0),
         # ("fullpon", "NSE", 0),
         # ("single", "NSE", 1),
-        # ('cascade', 'NSE', 1),
+        ('cascade', 'NSE', 1),
         ("full", "NSE", 1),
-        ("fullpon", "NSE", 1),
+        # ("fullpon", "NSE", 1),
         # ('single', 'MSE', 0),
         # ('cascade', 'MSE', 0),
         # ('full', 'MSE', 0),
@@ -385,7 +386,7 @@ if __name__ == "__main__":
         # ('fullpon', 'KGE', 0),
         # ("single", "KGE", 1),
         # ('cascade', 'KGE', 1),
-        ("full", "KGE", 1),
+        # ("full", "KGE", 1),
         # ("fullpon", "KGE", 1),
     ]
 
@@ -396,13 +397,13 @@ if __name__ == "__main__":
         # ("fullpon", "NSE", 0),
         # ("single", "NSE", 1),
         # ('cascade', 'NSE', 1),
-        ("full", "NSE", 1),
+        # ("full", "NSE", 1),
         # ("fullpon", "NSE", 1),
         # ('single', 'MSE', 0),
         # ('cascade', 'MSE', 0),
         # ('full', 'MSE', 0),
         # ("fullpon", "MSE", 0),
-        #("single", "MSE", 1),
+        # ("single", "MSE", 1),
         # ('cascade', 'MSE', 1),
         # ("full", "MSE", 1),
         # ("fullpon", "MSE", 1),
