@@ -40,9 +40,6 @@ get_basin_q = function(mod, param, basin_code, prev_q) {
     #data[,"Qmmsim"]<-NA
     Qmmsim <- rep(0, nrow(subdata))
     
-    Swi <- 0
-    Sgi <- 0
-    Spti <- 0
     wi <- 0
     yi <- 0
     eti <- 0
@@ -50,6 +47,7 @@ get_basin_q = function(mod, param, basin_code, prev_q) {
     roi <- 0
     Sgi <- 0
     Swi <- 0
+    Spti <- 0
 
     pre = subdata[,"pre"]
     tas = subdata[,"tas"]
@@ -106,7 +104,6 @@ get_basin_q = function(mod, param, basin_code, prev_q) {
         }
         
         #suma descarga y esc
-        #data[i,"Qmmsim"] <- roi + Qbi
         Qmmsim[i] <- roi + Qbi
     }
     #3. Estadisticos de bondad de ajuste en calibración############
@@ -118,8 +115,8 @@ eval_basin_param = function(mod, param, basin_code, prev_q) {
   Qhmsim <- get_basin_q(mod, param, basin_code, prev_q)
   subdata <- data[data[,1] == basin_code,]
 
-  subdata_filtered <- subdata[subdata$qhmobs != -100,]
-  Qhmsim_filtered <- Qhmsim[subdata$qhmobs != -100]
+  (subdata_filtered <- subdata[subdata$qhmobs != -100,])
+  (Qhmsim_filtered <- Qhmsim[subdata$qhmobs != -100])
 
   suppressWarnings(gof(sim=Qhmsim_filtered,obs=subdata_filtered$qhmobs,digits=6)[c(3,4,6,9,17,19),1])
 }

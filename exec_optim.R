@@ -1,38 +1,24 @@
 require(readr)
 require(hydroGOF)
 
-#datos
-# data <- read_csv("data/CHGdataSIMPA5043AG.txt", show_col_types = FALSE)
-# data$date = as.Date(paste0(data$date,"01"), format = "%Y%m%d")
-# data <- data[data[,1] == 5043,]
-# data <- data[order(data$date),]
-
-# basin_info <- read_csv("data/CHGbasins5043AG.txt", show_col_types = FALSE)
-# supha <- basin_info[,"supha"]
-
-data <- NA
-
-init_global = function(data_file, basin_file, basin_code){
+init_global_single = function(data_file, basin_file, basin_code){
     #datos
     data <- read_csv(data_file, show_col_types = FALSE)
     data$date <- as.Date(paste0(data$date,"01"), format = "%Y%m%d")
     data <- data[data[,"code"] == basin_code,]
-    data <<- data[order(data$date),]
-
-    basin_info <<- read_csv(basin_file, show_col_types = FALSE)
-    supha <<- basin_info[basin_info[,"code"] == basin_code,"supha"]
+    data_single <<- data[order(data$date),]
+    basin_info_single <<- read_csv(basin_file, show_col_types = FALSE)
+    supha_single <<- basin_info_single[basin_info_single[,"code"] == basin_code,"supha"]
+    basin_code_single <<- basin_code
 }
 
-hydro_prob = function(mod, param) {
+get_basin_q_single = function(mod, param) {
     #2. Ejecución del modelo#####################################################
 
     #y resto
     # data[,"Qhmsim"] <- NA
     
     
-    Swi <- 0
-    Sgi <- 0
-    Spti <- 0
     wi <- 0
     yi <- 0
     eti <- 0
@@ -40,14 +26,15 @@ hydro_prob = function(mod, param) {
     roi <- 0
     Sgi <- 0
     Swi <- 0
+    Spti <- 0
     Qmmsim <- 0
-    Qhmsim <- rep(0, nrow(data))
+    Qhmsim <- rep(0, nrow(data_single))
 
-    pre = data[,"pre"]
-    tas = data[,"tas"]
-    etp = data[,"etp"]
+    pre = data_single[,"pre"]
+    tas = data_single[,"tas"]
+    etp = data_single[,"etp"]
 
-    for(i in 1:nrow(data)){
+    for(i in 1:nrow(data_single)){
         #A) RUTINA WASMOD (modos 2 o 3)
         if(mod >= 2){
 
@@ -100,12 +87,22 @@ hydro_prob = function(mod, param) {
         
         #suma descarga y esc
         Qmmsim <- roi + Qbi
-        Qhmsim[i] <- Qmmsim*supha/100000
+        Qhmsim[i] <- Qmmsim*supha_single/100000
     }
 
     #3. Estadisticos de bondad de ajuste en calibración############
     
-    adjust = suppressWarnings(gof(sim=as.numeric(Qhmsim), obs=data$qhmobs, digits=6)[c(3,4,6,9,17,19),1])
+    adjust = suppressWarnings(gof(sim=as.numeric(Qhmsim), obs=data_single$qhmobs, digits=6)[c(3,4,6,9,17,19),1])
     
     adjust
+}
+
+eval_basin_param_single = function(mod, param) {
+  Qhmsim <- get_basin_q_single(mod, param)
+
+  subdata <- data_single[data_single[,1] == basin_code_single,]
+  subdata_filtered <- subdata[subdata$qhmobs != -100,]
+  Qhmsim_filtered <- Qhmsim[subdata$qhmobs != -100]
+
+  suppressWarnings(gof(sim=Qhmsim_filtered,obs=subdata_filtered$qhmobs,digits=6)[c(3,4,6,9,17,19),1])
 }

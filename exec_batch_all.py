@@ -38,7 +38,7 @@ else:
 r = robjects.r
 r["source"](rscript_name_single)
 r["source"](rscript_name_cascade)
-get_basin_q = robjects.globalenv["get_basin_q"]
+get_basin_q = robjects.globalenv["eval_basin_param"]
 
 weights = []
 basin_df = pd.read_csv(basin_file)
@@ -85,8 +85,8 @@ def execute_hydro_cro_single(metric, model):
         "group_subs": True,
         "stop_cond": "Neval",
         "time_limit": 400.0,
-        "Ngen": 100,
-        "Neval": 3e4,
+        "Ngen": 2,
+        "Neval": 1e4,
         "fit_target": 1000,
         "verbose": True,
         "v_timer": 1,
@@ -127,7 +127,6 @@ def execute_hydro_cro_cascade(metric, model):
         SubstrateReal("DE/best/2", {"F": 0.7, "Cr": 0.7}),
         SubstrateReal("BLXalpha", {"F": 0.35}),
         SubstrateReal("Firefly", {"a": 0.7, "b": 1, "d": 0.95, "g": 10}),
-        # SubstrateReal("Perm", {"N": 2}),
     ]
     params = {
         "popSize": 100,
@@ -138,10 +137,10 @@ def execute_hydro_cro_cascade(metric, model):
         "k": 3,
         "K": 10,
         "group_subs": True,
-        "stop_cond": "Ngen",
+        "stop_cond": "Neval",
         "time_limit": 400.0,
-        "Ngen": 100,
-        "Neval": 4e4,
+        "Ngen": 2,
+        "Neval": 1e4,
         "fit_target": 1000,
         "verbose": True,
         "v_timer": 1,
@@ -233,7 +232,7 @@ def execute_hydro_cro_full(metric, model):
         "group_subs": True,
         "stop_cond": "Neval",
         "time_limit": 400.0,
-        "Ngen": 100,
+        "Ngen": 2,
         "Neval": 1e4,
         "fit_target": 1000,
         "verbose": True,
@@ -302,7 +301,7 @@ def execute_hydro_cro_fullpon(metric, model):
         "group_subs": True,
         "stop_cond": "Neval",
         "time_limit": 400.0,
-        "Ngen": 100,
+        "Ngen": 2,
         "Neval": 1e4,
         "fit_target": 1000,
         "verbose": True,

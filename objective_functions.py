@@ -28,7 +28,7 @@ class HydroSimpleModelGOF(AbsObjectiveFunc):
         r = robjects.r
         r["source"](rscript_name)
 
-        robjects.globalenv["init_global"](data_file, basin_file, basin_code)
+        robjects.globalenv["init_global_single"](data_file, basin_file, basin_code)
 
         inf_lim = np.array([1e-5, 10, 0, 1e-5, 1e-5, 2, -6])
         sup_lim = np.array([1, 2000, 1, 100, 1, 11, 1])
@@ -45,7 +45,7 @@ class HydroSimpleModelGOF(AbsObjectiveFunc):
             opt = "min"
 
         # Loading the function we have defined in R.
-        self.exec_function_r = robjects.globalenv["hydro_prob"]
+        self.exec_function_r = robjects.globalenv["eval_basin_param_single"]
 
         super().__init__(self.input_size, opt, sup_lim, inf_lim)
         self.name = f"Hydro Simple GOF (metric={metric}, model_type={model_used}{', basin_code=' + str(basin_code) if basin_code else ''})"
