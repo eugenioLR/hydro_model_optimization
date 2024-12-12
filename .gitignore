@@ -11,4 +11,6 @@ data
 PyCRO_SL
 PyCRO_SL_old
 final_plots/
+other_figures
+figures_old/
 codigoVALIDAfin/
