@@ -14,17 +14,21 @@ class HydroSimpleModelGOF(AbsObjectiveFunc):
     def __init__(
         self,
         rscript_name="exec_optim.R",
-        data_file="data/CHGdataSIMPA5043AG.txt",
-        basin_file="data/CHGbasins5043AG.txt",
+        data_file="data/data_CHG_SIMPA_cal.csv",
+        basin_file="data/basins_CHG.csv",
         metric="MSE",
         model_used=0,
         basin_code=None,
     ):
+        if basin_code is None:
+            basin_data = pd.read_csv(basin_file)
+            basin_code = int(basin_data[basin_data["codedown"] == 0]["code"])
+
         # Defining the R script and loading the instance in Python
         r = robjects.r
         r["source"](rscript_name)
 
-        robjects.globalenv["init_global"](data_file, basin_file)
+        robjects.globalenv["init_global"](data_file, basin_file, basin_code)
 
         inf_lim = np.array([1e-5, 10, 0, 1e-5, 1e-5, 2, -6])
         sup_lim = np.array([1, 2000, 1, 100, 1, 11, 1])
@@ -69,12 +73,11 @@ class HydroSimpleModelGOF(AbsObjectiveFunc):
 
 
 class HydroSemidistModelGOF(AbsObjectiveFunc):
-    # class HydroChainedModelGOF(AbsObjectiveFunc):
     def __init__(
         self,
         rscript_name="exec_optim_semidist.R",
-        data_file="data/CHGdataSIMPA.txt",
-        basin_file="data/CHGbasins.txt",
+        data_file="data/data_CHG_SIMPA_cal.csv",
+        basin_file="data/basins_CHG.csv",
         metric="MSE",
         model_used=0,
         basin_code=-1,
@@ -134,13 +137,13 @@ class HydroSemidistModelGOF(AbsObjectiveFunc):
 class HydroFullModelGOF(AbsObjectiveFunc):
     def __init__(
         self,
-        rscript_name="exec_semidist.R",
-        data_file="data/CHGdataSIMPA.txt",
-        basin_file="data/CHGbasins.txt",
+        rscript_name="exec_optim_semidist.R",
+        data_file="data/data_CHG_SIMPA_cal.csv",
+        basin_file="data/basins_CHG.csv",
         metric="MSE",
         model_used=0,
         weights=None,
-    ):  # , basin_code=3005):
+    ):
         # Defining the R script and loading the instance in Python
         r = robjects.r
         r["source"](rscript_name)
@@ -156,7 +159,6 @@ class HydroFullModelGOF(AbsObjectiveFunc):
         self.metric = metric
         self.model_used = model_used
         self.basin_df = basin_df
-        # self.basin_code = basin_code
 
         if weights is None:
             weights = np.full(len(basin_df), 1 / len(basin_df))
@@ -211,7 +213,6 @@ class HydroFullModelGOF(AbsObjectiveFunc):
             elif self.metric == "KGE":
                 result_aux = float(metrics[5])
 
-            # result += result_aux * self.weights[i]
             results.append(result_aux)
         results = np.asarray(results)
         return np.average(results, weights=self.weights)

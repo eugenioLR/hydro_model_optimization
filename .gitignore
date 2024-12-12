@@ -1,5 +1,5 @@
-*.csv
-*.txt
+/*.csv
+/*.txt
 !README.txt
 __pycache__/
 figures/
@@ -7,7 +7,8 @@ figures/
 .RData
 .Rhistory
 results
-data
+data/old_files
+data/old_files2
 PyCRO_SL
 PyCRO_SL_old
 final_plots/

@@ -262,7 +262,7 @@ for(i in 1:length(subbasins)){
       - NSeff(sim=modelico[,"Qhmsim"],obs=modelico[,"qhmobs"])
     }
     #optimiza VERSION sceua
-    print(system.time(abcd.fit.nse <- sceua(OFUN = abcd.F0.nse, pars = as.numeric(param2[1,]) , lower = as.numeric(param2[2,]),upper = as.numeric(param2[3,]), maxn=500)))
+    print(system.time(abcd.fit.nse <- sceua(OFUN = abcd.F0.nse, pars = as.numeric(param2[1,]) , lower = as.numeric(param2[2,]),upper = as.numeric(param2[3,]), maxn=1000)))
     
     param.new = round(abcd.fit.nse$par,5)
     

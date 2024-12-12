@@ -18,7 +18,7 @@ parser.add_argument("-b", "--basin_n")
 args = parser.parse_args()
 
 if args.basin_n is None:
-    raise Exception("Please indicate the basin with the -b flag")
+    raise Exception("Please indicate the basin with the -b flag. Available basins codes are 3005 and 5043.")
 
 # basin_n = 5043  # 3005 or 5043
 basin_n = int(args.basin_n)
@@ -27,16 +27,11 @@ rscript_name_single = "exec_optim.R"
 rscript_name_cascade = "exec_optim_semidist.R"
 
 if basin_n == 3005:
-    # data_file_single = "data/data_CHT_3005.txt"
-    data_file_single = "data/data_CHT_SIMPA.txt"
-    data_file_cascade = "data/data_CHT_SIMPA.txt"
-    basin_file_single = "data/basins_CHT_3005.txt"
-    basin_file_cascade = "data/basins_CHT.txt"
+    data_file = "data/data_CHT_SIMPA_cal.csv"
+    basin_file = "data/basins_CHT.csv"
 elif basin_n == 5043:
-    data_file_single = "data/data_CHG_5043.txt"
-    data_file_cascade = "data/data_CHG_SIMPA.txt"
-    basin_file_single = "data/basins_CHG_5043.txt"
-    basin_file_cascade = "data/basins_CHG.txt"
+    data_file = "data/data_CHG_SIMPA_cal.csv"
+    basin_file = "data/basins_CHG.csv"
 else:
     raise Exception("Invalid basin. Try 5043 or 3005")
 
@@ -49,12 +44,10 @@ weights = []
 basin_df = pd.read_csv(basin_file)
 basin_df.sort_values(by=["order"])
 
-full_data = pd.read_csv(data_file_cascade)
+full_data = pd.read_csv(data_file)
 for i, idx in enumerate(basin_df.index):
     basin_code = basin_df["code"][idx]
-    total_caudal = full_data[full_data["qhmobs"] != -100][
-        full_data["code"] == basin_code
-    ]["qhmobs"].sum()
+    total_caudal = full_data[full_data["qhmobs"] != -100][full_data["code"] == basin_code]["qhmobs"].sum()
     weights.append(total_caudal)
 print(weights)
 weights = np.asarray(weights) / sum(weights)
@@ -63,9 +56,7 @@ print(weights)
 
 def execute_hydro_cro_single(metric, model):
     print(f"START for {metric} using model {model}\n\n")
-    objfunc = HydroSimpleModelGOF(
-        rscript_name_single, data_file_single, basin_file, metric, model
-    )
+    objfunc = HydroSimpleModelGOF(rscript_name_single, data_file, basin_file, metric, model)
     substrates_real = [
         SubstrateReal(
             "Cauchy",
@@ -121,8 +112,6 @@ def execute_hydro_cro_cascade(metric, model):
     print(f"START for {metric} using model {model}\n\n")
 
     substrates_real = [
-        # SubstrateReal("Gauss", {"F": 0.0001}),
-        # SubstrateReal("Cauchy", {"F": 0.01}),
         SubstrateReal(
             "Cauchy",
             {"F": np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001])},
@@ -177,8 +166,8 @@ def execute_hydro_cro_cascade(metric, model):
 
         objfunc = HydroSemidistModelGOF(
             rscript_name_cascade,
-            data_file_cascade,
-            basin_file_cascade,
+            data_file,
+            basin_file,
             metric,
             model,
             basin_code,
@@ -214,11 +203,8 @@ def execute_hydro_cro_cascade(metric, model):
 def execute_hydro_cro_full(metric, model):
     print(f"START for {metric} using model {model}\n\n")
 
-    objfunc = HydroFullModelGOF(
-        rscript_name_cascade, data_file_cascade, basin_file, metric, model
-    )
+    objfunc = HydroFullModelGOF(rscript_name_cascade, data_file, basin_file, metric, model)
     substrates_real = [
-        # SubstrateReal("Gauss", {"F": np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001])}),
         SubstrateReal(
             "Cauchy",
             {"F": np.tile(np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001]), len(basin_df)).flatten()},
@@ -235,7 +221,6 @@ def execute_hydro_cro_full(metric, model):
         SubstrateReal("DE/best/2", {"F": 0.7, "Cr": 0.7}),
         SubstrateReal("BLXalpha", {"F": 0.35}),
         SubstrateReal("Firefly", {"a": 0.7, "b": 1, "d": 0.95, "g": 10}),
-        # SubstrateReal("Perm", {"N": 2}),
     ]
     params = {
         "popSize": 100,
@@ -249,7 +234,7 @@ def execute_hydro_cro_full(metric, model):
         "stop_cond": "Neval",
         "time_limit": 400.0,
         "Ngen": 100,
-        "Neval": 4e4,
+        "Neval": 1e4,
         "fit_target": 1000,
         "verbose": True,
         "v_timer": 1,
@@ -275,32 +260,36 @@ def execute_hydro_cro_fullpon(metric, model):
 
     objfunc = HydroFullModelGOF(
         rscript_name_cascade,
-        data_file_cascade,
-        basin_file_cascade,
+        data_file,
+        basin_file,
         metric,
         model,
         weights=weights,
     )
     substrates_real = [
-        # SubstrateReal("Gauss", {"F": np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001])}),
         SubstrateReal(
             "Cauchy",
             {
-                "F": np.tile(np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001]),len(basin_df),).flatten(),
+                "F": np.tile(
+                    np.array([0.0001, 0.1, 0.0001, 0.01, 0.0001, 0.001, 0.0001]),
+                    len(basin_df),
+                ).flatten(),
             },
         ),
         SubstrateReal(
             "MutNoise",
             {
                 "method": "Gauss",
-                "F": np.tile(np.array([0.001, 1, 0.001, 0.1, 0.001, 0.01, 0.001]),len(basin_df),).flatten(),
+                "F": np.tile(
+                    np.array([0.001, 1, 0.001, 0.1, 0.001, 0.01, 0.001]),
+                    len(basin_df),
+                ).flatten(),
                 "N": 1,
             },
         ),
         SubstrateReal("DE/best/2", {"F": 0.7, "Cr": 0.7}),
         SubstrateReal("BLXalpha", {"F": 0.35}),
         SubstrateReal("Firefly", {"a": 0.7, "b": 1, "d": 0.95, "g": 10}),
-        # SubstrateReal("Perm", {"N": 2}),
     ]
     params = {
         "popSize": 100,
@@ -314,7 +303,7 @@ def execute_hydro_cro_fullpon(metric, model):
         "stop_cond": "Neval",
         "time_limit": 400.0,
         "Ngen": 100,
-        "Neval": 3e4,
+        "Neval": 1e4,
         "fit_target": 1000,
         "verbose": True,
         "v_timer": 1,
@@ -336,20 +325,17 @@ def execute_hydro_cro_fullpon(metric, model):
 
 
 def execute_hydro_cro_wrapper(x):
-    if x[0] == "single":
-        execute_hydro_cro_single(*x[1:])
-    elif x[0] == "cascade":
-        execute_hydro_cro_cascade(*x[1:])
-    elif x[0] == "full":
-        execute_hydro_cro_full(*x[1:])
-    elif x[0] == "fullpon":
-        execute_hydro_cro_fullpon(*x[1:])
+    strategy, metric, model_type = x
+    if strategy == "single":
+        execute_hydro_cro_single(metric, model_type)
+    elif strategy == "cascade":
+        execute_hydro_cro_cascade(metric, model_type)
+    elif strategy == "full":
+        execute_hydro_cro_full(metric, model_type)
+    elif strategy == "fullpon":
+        execute_hydro_cro_fullpon(metric, model_type)
     else:
-        raise Exception(
-            f"Try using 'single', 'cascade', 'full' or 'fullpon' instead of {x[0]}."
-        )
-
-
+        raise Exception(f"Try using 'single', 'cascade', 'full' or 'fullpon' instead of {strategy}.")
 
 
 def main(args):
@@ -365,54 +351,54 @@ def main(args):
 if __name__ == "__main__":
     args_5043 = [
         ("single", "NSE", 0),
-        ('cascade', 'NSE', 0),
+        ("cascade", "NSE", 0),
         ("full", "NSE", 0),
         ("fullpon", "NSE", 0),
         ("single", "NSE", 1),
-        ('cascade', 'NSE', 1),
+        ("cascade", "NSE", 1),
         ("full", "NSE", 1),
         ("fullpon", "NSE", 1),
-        ('single', 'MSE', 0),
-        ('cascade', 'MSE', 0),
-        ('full', 'MSE', 0),
+        ("single", "MSE", 0),
+        ("cascade", "MSE", 0),
+        ("full", "MSE", 0),
         ("fullpon", "MSE", 0),
         ("single", "MSE", 1),
-        ('cascade', 'MSE', 1),
+        ("cascade", "MSE", 1),
         ("full", "MSE", 1),
         ("fullpon", "MSE", 1),
         ("single", "KGE", 0),
-        ('cascade', 'KGE', 0),
-        ('full', 'KGE', 0),
-        ('fullpon', 'KGE', 0),
+        ("cascade", "KGE", 0),
+        ("full", "KGE", 0),
+        ("fullpon", "KGE", 0),
         ("single", "KGE", 1),
-        ('cascade', 'KGE', 1),
+        ("cascade", "KGE", 1),
         ("full", "KGE", 1),
         ("fullpon", "KGE", 1),
     ]
 
     args_3005 = [
         ("single", "NSE", 0),
-        ('cascade', 'NSE', 0),
+        ("cascade", "NSE", 0),
         ("full", "NSE", 0),
         ("fullpon", "NSE", 0),
         ("single", "NSE", 1),
-        ('cascade', 'NSE', 1),
+        ("cascade", "NSE", 1),
         ("full", "NSE", 1),
         ("fullpon", "NSE", 1),
-        ('single', 'MSE', 0),
-        ('cascade', 'MSE', 0),
-        ('full', 'MSE', 0),
+        ("single", "MSE", 0),
+        ("cascade", "MSE", 0),
+        ("full", "MSE", 0),
         ("fullpon", "MSE", 0),
         ("single", "MSE", 1),
-        ('cascade', 'MSE', 1),
+        ("cascade", "MSE", 1),
         ("full", "MSE", 1),
         ("fullpon", "MSE", 1),
         ("single", "KGE", 0),
-        ('cascade', 'KGE', 0),
-        ('full', 'KGE', 0),
-        ('fullpon', 'KGE', 0),
+        ("cascade", "KGE", 0),
+        ("full", "KGE", 0),
+        ("fullpon", "KGE", 0),
         ("single", "KGE", 1),
-        ('cascade', 'KGE', 1),
+        ("cascade", "KGE", 1),
         ("full", "KGE", 1),
         ("fullpon", "KGE", 1),
     ]

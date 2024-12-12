@@ -12,15 +12,15 @@ require(hydroGOF)
 
 data <- NA
 
-init_global = function(data_file, basin_file){
+init_global = function(data_file, basin_file, basin_code){
     #datos
     data <- read_csv(data_file, show_col_types = FALSE)
     data$date <- as.Date(paste0(data$date,"01"), format = "%Y%m%d")
-    data <- data[data[,1] == 5043,]
+    data <- data[data[,"code"] == basin_code,]
     data <<- data[order(data$date),]
 
     basin_info <<- read_csv(basin_file, show_col_types = FALSE)
-    supha <<- basin_info[,"supha"]
+    supha <<- basin_info[basin_info[,"code"] == basin_code,"supha"]
 }
 
 hydro_prob = function(mod, param) {
